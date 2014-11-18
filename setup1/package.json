@@ -1,0 +1,11 @@
+{
+  "name": "setup1",
+  "description": "Basic setup to read vitals from IOT",
+  "version": "0.0.1",
+  "main": "main.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "dependencies": {
+  }
+}
