@@ -1,0 +1,14 @@
+{
+  "name": "dbIO",
+  "description": "Webapp to interface read/writes to the DB",
+  "version": "0.0.1",
+  "main": "main.js",
+  "engines": {
+    "node": ">=0.10.0"
+  },
+  "dependencies": {
+	  "require": ">=2.4.17",
+	  "express": ">=4.10.2",
+	  "http": ">=0.0.0"
+  }
+}

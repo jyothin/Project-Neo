@@ -1,0 +1,2 @@
+gcloud compute --project "her-web" ssh --zone "asia-east1-a" "backend-1"
+gcloud compute --project "her-web" ssh --zone "asia-east1-a" "frontend-1"
