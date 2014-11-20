@@ -32,6 +32,12 @@ input, textarea  {
     -webkit-user-select: text ; -moz-user-select: text ; -ms-user-select: text ; user-select: text ;
 }
 
+.logo {
+	position: absolute;
+	right: 10px;
+	top:10px;
+}
+
 body {
     /* margin: 0.5rem ; */
     color: black ;
@@ -44,7 +50,7 @@ body {
 
 table.readings {
 	text-align: center;
-	border: 1px solid #000000;
+	border: 1px solid #555555;
 	width: 1024px;
 	margin: 0px 100px;
 	border-collapse: collapse;
@@ -57,7 +63,7 @@ thead.readings {
 }
 
 td {
-	border: 1px solid #000000;
+	border: 1px solid #555555;
 }
 
 td.readings {

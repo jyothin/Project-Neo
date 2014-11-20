@@ -82,16 +82,15 @@ function periodicActivity(socket) //
   console.log("Aio 0 is: " + temp_value);
   var converted_temp_value = convertTempValue(temp_value);
   console.log('Converted temp value = ' + converted_temp_value);
-	
-  socket.emit("message", {'pulse': converted_pulse_value, 'temp': converted_temp_value});
-	
+
   /* Push values to client */
+  socket.emit("message", {'pulse': converted_pulse_value, 'temp': converted_temp_value});
 
   other_watch = setTimeout(periodicActivity, other_sensor_interval); //call the indicated function after 1 second (1000 milliseconds)
   
 }
 
-function startSensorWatch(socket) {
+function startTouchWatch(socket) {
     'use strict';
     var touch_value = 0, last_touch_value;
 
@@ -143,10 +142,230 @@ io.on('connection', function (socket) {
     socket.emit('connected', 'Connected');
 
     //Start watching Sensors connected to Galileo board
-    startSensorWatch(socket);
+    startTouchWatch(socket);
 
     //Attach a 'disconnect' event handler to the socket
     socket.on('disconnect', function () {
         console.log('Client disconnected');
     });
 });
+
+
+/* Common for UDP and TCP */
+/*
+var day = 86400000;
+// Sample data, replace it desired values
+var data = [{
+    sensorName : "actuator1",
+    sensorType: "control.v1.0",
+    observations: [{
+        on: new Date().getTime() - (day * 3),
+        value: "10"
+    },{
+        on: new Date().getTime() - (day * 2),
+        value: "20"
+    },{
+        on: new Date().getTime() - (day),
+        value: "30"
+    }]
+},{
+    sensorName : "hum-sensor1",
+    sensorType: "humidity.v1.0",
+    observations: [{
+        on: new Date().getTime() - (day * 3),
+        value: "90"
+    },{
+        on: new Date().getTime() - (day * 2),
+        value: "50"
+    },{
+        on: new Date().getTime() - (day),
+        value: "80"
+    }]
+},{
+    sensorName : "temp-sensor",
+    sensorType: "temperature.v1.0",
+    observations: [{
+        on: new Date().getTime() - (day * 3),
+        value: "10"
+    },{
+        on: new Date().getTime() - (day * 2),
+        value: "20"
+    },{
+        on: new Date().getTime() - (day),
+        value: "30"
+    }]
+},{
+    sensorName : "hum-sensor",
+    sensorType: "humidity.v1.0",
+    observations: [{
+        on: new Date().getTime() - (day * 3),
+        value: "90"
+    },{
+        on: new Date().getTime() - (day * 2),
+        value: "50"
+    },{
+        on: new Date().getTime() - (day),
+        value: "80"
+    }]
+}];
+*/
+
+
+/* Using iot-agent UDP */
+/*
+var dgram = require('dgram');
+var client = dgram.createSocket('udp4');
+
+// UDP Options
+var options = {
+    host : '127.0.0.1',
+    port : 41234
+};
+
+function registerNewSensor(name, type, callback){
+    var msg = JSON.stringify({
+        n: name,
+        t: type
+    });
+
+    var sentMsg = new Buffer(msg);
+    console.log("Registering sensor: " + sentMsg);
+    client.send(sentMsg, 0, sentMsg.length, options.port, options.host, callback);
+}
+
+function sendObservation(name, value, on){
+    var msg = JSON.stringify({
+        n: name,
+        v: value,
+        on: on
+    });
+
+    var sentMsg = new Buffer(msg);
+    console.log("Sending observation: " + sentMsg);
+    client.send(sentMsg, 0, sentMsg.length, options.port, options.host);
+}
+
+client.on("message", function(mesg, rinfo){
+    console.log('UDP message from %s:%d', rinfo.address, rinfo.port);
+    var a = JSON.parse(mesg);
+    console.log(" m ", JSON.parse(mesg));
+
+    if (a.b == 5) {
+        client.send(message, 0, message.length, PORT, HOST, function(err, bytes) {
+            if (err) throw err;
+            console.log('UDP message sent to ' + HOST +':'+ PORT);
+            // client.close();
+
+        });
+    }
+});
+
+
+data.forEach(function(item) {
+    registerNewSensor(item.sensorName, item.sensorType, function () {
+        item.observations.forEach(function (observation) {
+            setTimeout(function () {
+                sendObservation(item.sensorName, observation.value, observation.on);
+            }, 5000);
+        });
+    });
+});
+*/
+
+/* Using iot-agent TCP */
+/*
+var net = require('net');
+var client = new net.Socket();
+
+// TCP Options
+var options = {
+    host : 'localhost',
+    port : 7070
+};
+
+function registerNewSensor(name, type, callback){
+    var msg = JSON.stringify({
+        n: name,
+        t: type
+    });
+
+    var sentMsg = msg.length + "#" + msg;
+    console.log("Registering sensor: " + sentMsg);
+    client.write(sentMsg);
+    callback();
+}
+
+function sendObservation(name, value, on){
+    var msg = JSON.stringify({
+        n: name,
+        v: value,
+        on: on
+    });
+
+    var sentMsg = msg.length + "#" + msg;
+    console.log("Sending observation: " + sentMsg);
+    client.write(sentMsg);
+}
+
+client.connect(options.port, options.host, function() {
+    console.log('Connected');
+
+    data.forEach(function(item){
+       registerNewSensor(item.sensorName, item.sensorType, function(){
+           item.observations.forEach(function(observation){
+               setTimeout(function(){
+                   sendObservation(item.sensorName, observation.value, observation.on);
+               }, 3000);
+           });
+       });
+    });
+});
+*/
+
+/* Using iot-agent REST */
+/*
+var http = require('http'),
+    os = require("os"),
+    fs =  require("fs");
+
+// Sample data, replace it with sensor call results
+var msg = { 
+    "s": "temp-sensor", 
+    "v": 26.7 
+};
+
+// HTTP Headers
+var putHeaders = {
+    'Content-Type' : 'application/json',
+    'Content-Length' : Buffer.byteLength(jsonObj, 'utf8')
+};
+
+// HTTP Options 
+var putOpts = {
+    host : '127.0.0.1',
+    port : 8080,
+    path : '/data',
+    method : 'PUT',
+    headers : putHeaders
+};
+
+// Do the POST call
+var putReq = http.request(putOpts, function(res) {
+    console.log("statusCode: ", res.statusCode);
+    res.on('data', function(d) {
+        console.info('PUT result:\n');
+        process.stdout.write(d);
+        console.info('\n\nPUT completed');
+    });
+});
+
+// Write JSON data
+putReq.write(jsonObj);
+putReq.end();
+putReq.on('error', function(e) {
+    console.error(e);
+});
+*/
+
+/* backend-1 DB write */
+

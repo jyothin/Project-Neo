@@ -37,7 +37,7 @@ function connectHandler() {
 	/* Connect to IoT device */
 
 	
-	socket = window.io(IOT_IP_ADDRESS+'/'+IOT_PORT);
+	socket = window.io(IOT_IP_ADDRESS+':'+IOT_PORT);
 	socket.connect();
 	
 	socket.on('connect', function () {

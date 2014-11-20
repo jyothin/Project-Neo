@@ -1,6 +1,6 @@
 {
   "name": "setup1",
-  "description": "Basic setup to read vitals from IOT",
+  "description": "Basic setup to read vitals from IoT device",
   "version": "0.0.1",
   "main": "main.js",
   "engines": {
