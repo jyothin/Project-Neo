@@ -6,8 +6,8 @@
 /*jslint browser:true, devel:true, white:true, vars:true */
 /*global $:false, intel:false app:false, dev:false, cordova:false */
 
-var IOT_IP_ADDRESS = '';
-var IOT_PORT = 1337;
+var IOT_IP_ADDRESS = '169.254.8.97';
+var IOT_PORT = '1337';
 var socket = null;
 
 // This file contains your event handlers, the center of your application.

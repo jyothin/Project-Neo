@@ -17,6 +17,7 @@ Article: https://software.intel.com/en-us/html5/articles/intel-xdk-iot-edition-n
 
 var mraa = require('mraa'); //require mraa
 console.log('MRAA Version: ' + mraa.getVersion()); //write the mraa version to the console
+console.log('Ok to go...');
 
 /* Network config and settings */
 var port = 1337;
@@ -26,34 +27,44 @@ var touch_watch = null;
 var other_watch = null;
 
 /* Intervals */
-var other_sensor_interval = 100; /* 100 milliseconds */
-var touch_sensor_interval = 500; /* 500 milliseconds */
+var led_sensor_interval = 1000;
+var touch_sensor_interval = 500;
+var other_sensor_interval = 5000;
 
 /* PIN config */
+var led_pin = new mraa.Gpio(4); //LED hooked up to digital pin 4 (or built in pin on Galileo Gen1 & Gen2)
+led_pin.dir(mraa.DIR_OUT); //set the gpio direction to output
+var led_state = true; //Boolean to hold the state of Led
+
+/* Use touch sensor to activate data watch */
+/* Using Digital pin #5 (D5) for Touch reading */
+var touch_pin = new mraa.Gpio(5);
+touch_pin.dir(mraa.DIR_IN);
+
+/* Use buzzer to indicate that data watch is activated */
+/* Buzer is connected to D6 */
+var buzzer_pin = new mraa.Gpio(6);
+buzzer_pin.dir(mraa.DIR_OUT);
+/* Turn off buzzer on start */
+buzzer_pin.write(0);
+
 //GROVE Kit Shield D0 --> GPIO0
 //GROVE Kit Shield D1 --> GPIO1
 /* Using Digital pin #0 (D0) for Pulsing reading */
-var pulse_pin = new mraa.Gpio(0); //setup digital read on Digital pin #0 (D0)
+var pulse_pin = new mraa.Gpio(2); //setup digital read on Digital pin #0 (D0)
 pulse_pin.dir(mraa.DIR_IN); //set the gpio direction to input
 
 /* Using Analog pin #0 (A0) for Temperature reading */
 //GROVE Kit A0 Connector --> Aio(0)
 var temp_pin = new mraa.Aio(0);
 
-/* Use touch sensor to activate data watch */
-/* Using Digital pin #2 (D2) for Touch reading */
-var touch_pin = new mraa.Gpio(2);
-touch_pin.dir(mraa.DIR_IN);
-
-/* Use buzzer to indicate that data watch is activated */
-/* Buzer is connected to D3 */
-var buzzer_pin = new mraa.Gpio(3);
-buzzer_pin.dir(mraa.DIR_OUT);
-/* Turn off buzzer on start */
-buzzer_pin.write(0);
-
-/* Do Not start other sensors on init */
-//periodicActivity(); //call the periodicActivity function
+function periodicActivityLED()
+{
+  led_pin.write(led_state? 1 : 0); //if led_state is true then write a '1' (high) otherwise write a '0' (low)
+  led_state = !led_state; //invert the ledState
+  setTimeout(periodicActivityLED, led_sensor_interval); //call the indicated function after 1 second (1000 milliseconds)
+}
+periodicActivityLED();
 
 function convertPulseValue(v) {
 	return v;
@@ -61,67 +72,69 @@ function convertPulseValue(v) {
 
 function convertTempValue(v) {
 	var B = 3975;
-	var resistance = (1023 - v) * 10000 / v; //get the resistance of the sensor;
+	var resistance = (1023 + v) * 10000 / v; //get the resistance of the sensor;
 	console.log("Resistance: " + resistance);
-	var celsius_temperature = 1 / (Math.log(resistance / 10000) / B + 1 / 298.15) - 273.15;//convert to temperature via datasheet ;
-	console.log("Celsius Temperature "+celsius_temperature); 
+	var celsius_temperature = 1 / (Math.log(resistance / 10000) / B + 1 / 298.15) - 273.15; //convert to temperature via datasheet
+	console.log("Celsius Temperature "+celsius_temperature);
 	var fahrenheit_temperature = (celsius_temperature * (9 / 5)) + 32;
 	console.log("Fahrenheit Temperature: " + fahrenheit_temperature);
 	return fahrenheit_temperature;
 }
+
+function periodicActivity(socket) {
+    //var pulse_value =  pulse_pin.read(); //read the pulse reading
+    var pulse_value = 0.0;
+    //console.log('pulse_value is ' + pulse_value); //write the read value out to the console
+    var converted_pulse_value = convertPulseValue(pulse_value);
+    //console.log('Converted Pulse value = ' + converted_pulse_value);
 	
-function periodicActivity(socket) //
-{
-  var pulse_value =  pulse_pin.read(); //read the pulse reading
-  console.log('Gpio 1 is ' + pulse_value); //write the read value out to the console
-  var converted_pulse_value = convertPulseValue(pulse_value);
-  console.log('Converted Pulse value = ' + converted_pulse_value);
-  socket.emit("message", converted_pulse_value);
-    
-  var temp_value = temp_pin.read(); //read the temperature reading
-  console.log("Aio 0 is: " + temp_value);
-  var converted_temp_value = convertTempValue(temp_value);
-  console.log('Converted temp value = ' + converted_temp_value);
+    var temp_value = temp_pin.read(); //read the temperature reading
+    console.log("temp_value is: " + temp_value);
+    var converted_temp_value = convertTempValue(temp_value);
+    console.log('Converted temp value = ' + converted_temp_value);
 
-  /* Push values to client */
-  socket.emit("message", {'pulse': converted_pulse_value, 'temp': converted_temp_value});
+    // Push values to client
+	if(socket) {
+        //socket.emit("reading", {'pulse': converted_pulse_value, 'temp': converted_temp_value});
+	}
 
-  other_watch = setTimeout(periodicActivity, other_sensor_interval); //call the indicated function after 1 second (1000 milliseconds)
-  
+    other_watch = setTimeout(periodicActivity(socket), other_sensor_interval); //call the indicated function after 1 second (1000 milliseconds)
 }
+//periodicActivity(null); //call the periodicActivity function
 
 function startTouchWatch(socket) {
     'use strict';
     var touch_value = 0, last_touch_value;
 
-	/* Check for touch every 500 milliseconds */
-	/* If touch is sensed, start watching other sensors for readings */
+	// Check for touch every 500 milliseconds
+	// If touch is sensed, start watching other sensors for readings
     touch_watch = setInterval(
 		function () {
 			touch_value = touch_pin.read();
+			//console.log("touch_value = " + touch_value);
 			if (touch_value === 1 && last_touch_value === 0) {
 				console.log("Touch activated...");
-				/* Notify client */
-				socket.emit('message', "on");
+				// Notify client
+				if(socket) {
+					socket.emit('message', 'on');
+				}
 				buzzer_pin.write(touch_value);
 				if (other_watch !== null) {
-					clearInterval(other_watch);
+					clearTimeout(other_watch);
 					other_watch = null;
 				} else {
-					/* Start watching other sensors */
+					// Start watching other sensors
 					periodicActivity(socket);
 				}
 			} else if (touch_value === 0 && last_touch_value === 1) {
-				//console.log("Touch deactivated...");
-				/* Do not notify client */
-				//socket.emit('message', "off");
-				//buzzer_pin.write(touch_value);
+				buzzer_pin.write(touch_value);
 			}
 			last_touch_value = touch_value;
 		},
 		touch_sensor_interval
 	); 
 }
+//startTouchWatch(null);
 
 //Create Socket.io server
 var http = require('http');
