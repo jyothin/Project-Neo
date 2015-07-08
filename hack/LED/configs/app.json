@@ -1,0 +1,26 @@
+{
+    "target": {
+      "host": "dashboard.us.enableiot.com",
+      "api_root": "/v1/api",
+      "username": "345ishaan@gmail.com",
+      "password": "IntelTeam22",
+      "account": "345ishaan"
+    },
+    "source": {
+      "deviceId": "98-4F-EE-01-87-9E",
+      "gatewayId": "98-4F-EE-01-87-9E",
+      "name": "IntelIoT",
+      "tags": ["India", "KA", "Bangalore"],
+      "loc": [ 45.5228, -122.9897, 75.2 ],
+      "attributes" : {
+        "manufacturer": "intel",
+        "platform": "x86",
+        "os": "linux"
+      }
+    },
+    "component": {
+      "type": "temperature.v1.1",
+      "name": "b_temp",
+      "cid": "b_temp_sensor"
+    }
+}
